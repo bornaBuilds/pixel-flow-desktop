@@ -13,23 +13,19 @@
 //
 // Usage: node scripts/build-sidecar.mjs [target-triple]   (defaults to the host)
 
-import { execFileSync, execSync } from "node:child_process";
-import { mkdirSync, rmSync, writeFileSync, existsSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
-import { TARGETS } from "./targets.mjs";
+import { resolveTarget, directorySize, megabytes } from "./targets.mjs";
 
-const triple = process.argv[2] || execSync("rustc --print host-tuple").toString().trim();
-const target = TARGETS[triple];
-if (!target) {
-  console.error(`Unknown target "${triple}". Known: ${Object.keys(TARGETS).join(", ")}`);
-  process.exit(1);
-}
+const { triple, target } = resolveTarget(process.argv);
 
 const root = path.resolve(import.meta.dirname, "..");
 const outDir = path.join(root, "src-tauri", "resources", "sidecar");
 
+// readFileSync, not `cat`: this script has to run on Windows runners too.
 const sharpVersion = JSON.parse(
-  execSync("cat sidecar/package.json", { cwd: root }).toString()
+  readFileSync(path.join(root, "sidecar", "package.json"), "utf8")
 ).dependencies.sharp;
 
 console.error(`▸ building sidecar for ${triple} (sharp ${sharpVersion})`);
@@ -40,8 +36,11 @@ mkdirSync(outDir, { recursive: true });
 // 1. Bundle the service. --external:sharp is mandatory: bundling it breaks the
 //    runtime lookup of @img/sharp-<platform>-<arch>.
 console.error("↳ esbuild");
+const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+
 execFileSync(
-  "pnpm",
+  pnpm,
   [
     "exec", "esbuild", "sidecar/src/index.mjs",
     "--bundle",
@@ -66,7 +65,7 @@ writeFileSync(
 const flags = [`--os=${target.npm.os}`, `--cpu=${target.npm.cpu}`];
 if (target.npm.libc) flags.push(`--libc=${target.npm.libc}`);
 execFileSync(
-  "npm",
+  npm,
   ["install", "--prefix", outDir, "--include=optional", "--no-audit", "--no-fund", "--silent", ...flags, `sharp@${sharpVersion}`],
   { cwd: root, stdio: "inherit" }
 );
@@ -93,5 +92,6 @@ rmSync(path.join(outDir, "node_modules", "@img", "sharp-wasm32"), {
   force: true,
 });
 
-const size = execSync(`du -sh "${outDir}" | cut -f1`).toString().trim();
+// directorySize, not `du`: not available on Windows.
+const size = megabytes(await directorySize(outDir));
 console.error(`✓ ${path.relative(root, outDir)} ready (${size})`);

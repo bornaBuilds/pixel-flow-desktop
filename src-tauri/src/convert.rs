@@ -135,11 +135,7 @@ fn file_name_of(path: &Path) -> String {
 /// conversions run concurrently, so an existence check would race and two
 /// sources both called `photo.*` would resolve to the same output, with the
 /// second silently clobbering the first.
-fn plan_output_paths(
-    dir: &Path,
-    sources: &[PathBuf],
-    format: OutputFormat,
-) -> Vec<PathBuf> {
+fn plan_output_paths(dir: &Path, sources: &[PathBuf], format: OutputFormat) -> Vec<PathBuf> {
     let mut taken: HashSet<String> = HashSet::new();
     sources
         .iter()
@@ -183,7 +179,9 @@ pub async fn convert_images(
 
     // The static scope covers $APPCACHE/batches/**, but widen explicitly so the
     // webview can read these files back through convertFileSrc().
-    let _ = app.asset_protocol_scope().allow_directory(&output_dir, false);
+    let _ = app
+        .asset_protocol_scope()
+        .allow_directory(&output_dir, false);
 
     let _ = on_event.send(ConvertEvent::Started {
         batch_id: batch_id.clone(),
@@ -197,58 +195,62 @@ pub async fn convert_images(
 
     let outputs = plan_output_paths(&output_dir, &paths, options.format);
 
-    let tasks = paths.into_iter().zip(outputs).enumerate().map(|(index, (source, output))| {
-        let app = app.clone();
-        let on_event = on_event.clone();
-        let options = options.clone();
-        let semaphore = semaphore.clone();
-        let succeeded = succeeded.clone();
-        let failed = failed.clone();
+    let tasks = paths
+        .into_iter()
+        .zip(outputs)
+        .enumerate()
+        .map(|(index, (source, output))| {
+            let app = app.clone();
+            let on_event = on_event.clone();
+            let options = options.clone();
+            let semaphore = semaphore.clone();
+            let succeeded = succeeded.clone();
+            let failed = failed.clone();
 
-        async move {
-            let _permit = semaphore.acquire().await;
-            let file_name = file_name_of(&source);
-            let _ = on_event.send(ConvertEvent::FileStart {
-                index,
-                file_name: file_name.clone(),
-            });
+            async move {
+                let _permit = semaphore.acquire().await;
+                let file_name = file_name_of(&source);
+                let _ = on_event.send(ConvertEvent::FileStart {
+                    index,
+                    file_name: file_name.clone(),
+                });
 
-            let request = json!({
-                "op": "convert",
-                "input": source.to_string_lossy(),
-                "output": output.to_string_lossy(),
-                "format": options.format.as_str(),
-                "quality": options.quality,
-                "maxWidth": options.max_width,
-                "maxHeight": options.max_height,
-            });
+                let request = json!({
+                    "op": "convert",
+                    "input": source.to_string_lossy(),
+                    "output": output.to_string_lossy(),
+                    "format": options.format.as_str(),
+                    "quality": options.quality,
+                    "maxWidth": options.max_width,
+                    "maxHeight": options.max_height,
+                });
 
-            match sidecar::request(&app, request).await {
-                Ok(reply) => {
-                    succeeded.fetch_add(1, Ordering::Relaxed);
-                    let n = |k: &str| reply.get(k).and_then(serde_json::Value::as_u64);
-                    let _ = on_event.send(ConvertEvent::FileDone {
-                        index,
-                        file_name,
-                        output_path: output.display().to_string(),
-                        bytes_in: n("bytesIn").unwrap_or(0),
-                        bytes_out: n("bytesOut").unwrap_or(0),
-                        width: n("width").unwrap_or(0) as u32,
-                        height: n("height").unwrap_or(0) as u32,
-                    });
-                }
-                Err(error) => {
-                    // One bad file fails that file only; the batch carries on.
-                    failed.fetch_add(1, Ordering::Relaxed);
-                    let _ = on_event.send(ConvertEvent::FileError {
-                        index,
-                        file_name,
-                        message: error.to_string(),
-                    });
+                match sidecar::request(&app, request).await {
+                    Ok(reply) => {
+                        succeeded.fetch_add(1, Ordering::Relaxed);
+                        let n = |k: &str| reply.get(k).and_then(serde_json::Value::as_u64);
+                        let _ = on_event.send(ConvertEvent::FileDone {
+                            index,
+                            file_name,
+                            output_path: output.display().to_string(),
+                            bytes_in: n("bytesIn").unwrap_or(0),
+                            bytes_out: n("bytesOut").unwrap_or(0),
+                            width: n("width").unwrap_or(0) as u32,
+                            height: n("height").unwrap_or(0) as u32,
+                        });
+                    }
+                    Err(error) => {
+                        // One bad file fails that file only; the batch carries on.
+                        failed.fetch_add(1, Ordering::Relaxed);
+                        let _ = on_event.send(ConvertEvent::FileError {
+                            index,
+                            file_name,
+                            message: error.to_string(),
+                        });
+                    }
                 }
             }
-        }
-    });
+        });
 
     futures::future::join_all(tasks).await;
 

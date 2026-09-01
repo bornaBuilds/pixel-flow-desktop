@@ -1,0 +1,143 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: ${{ matrix.label }}
+    permissions:
+      contents: write
+    strategy:
+      # One platform failing should not hide whether the others work.
+      fail-fast: false
+      matrix:
+        include:
+          # ubuntu-22.04, not -latest: the glibc a binary is built against is a
+          # floor, so building on 24.04 would refuse to run on 22.04/Debian 12.
+          # Deprecation starts 2026-09-17 and completes 2027-04-17; when it goes,
+          # move to `container: ubuntu:22.04` on ubuntu-latest rather than
+          # bumping the runner.
+          - label: linux-x64
+            runner: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: "--bundles deb,rpm,appimage"
+          - label: windows-x64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            # NSIS only: the updater path is far better tested for NSIS than MSI.
+            args: "--bundles nsis"
+          - label: macos-arm64
+            runner: macos-latest
+            target: aarch64-apple-darwin
+            args: "--bundles dmg"
+          # macos-13 was removed by GitHub; -intel is the current x64 label.
+          # Separate per-arch DMGs rather than universal: universal would mean
+          # shipping two Node runtimes and two sharp trees in one bundle.
+          - label: macos-x64
+            runner: macos-15-intel
+            target: x86_64-apple-darwin
+            args: "--bundles dmg"
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install Linux build dependencies
+        if: startsWith(matrix.runner, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev \
+            libgtk-3-dev libdbus-1-dev librsvg2-dev libssl-dev \
+            build-essential pkg-config patchelf xdg-utils file
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+          key: ${{ matrix.target }}
+
+      # ~100 MB Node runtime + the target's sharp/libvips. Not in git.
+      - name: Prepare sidecar
+        run: |
+          node scripts/fetch-node.mjs ${{ matrix.target }}
+          node scripts/build-sidecar.mjs ${{ matrix.target }}
+
+      - name: Import Apple certificate
+        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          echo "$APPLE_CERTIFICATE" | base64 --decode > cert.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import cert.p12 -k build.keychain \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm cert.p12
+
+      # Tauri signs the app and externalBin but NOT bundle.resources, and
+      # notarization rejects any unsigned Mach-O. Must run before tauri build.
+      - name: Sign sidecar inner binaries
+        if: runner.os == 'macOS'
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: bash scripts/sign-macos-inner.sh
+
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Apple: signing + notarization. Unset -> unsigned build, which still
+          # produces a usable DMG for testing.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: "PixelFlow __VERSION__"
+          releaseDraft: true
+          prerelease: false
+          # No updater configured yet (Milestone 5); default is true, which
+          # would publish a latest.json nothing can consume.
+          uploadUpdaterJson: false
+          args: ${{ matrix.args }} --target ${{ matrix.target }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixelflow-${{ matrix.label }}
+          if-no-files-found: error
+          path: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe

@@ -22,11 +22,26 @@ fn work_around_webkitgtk_hardware_decode() {
         return;
     }
     let demoted = [
-        "vah264dec", "vah265dec", "vavp8dec", "vavp9dec", "vaav1dec",
-        "vah264lpdec", "vah265lpdec", "vavp9lpdec", "vaav1lpdec",
-        "vaapih264dec", "vaapih265dec", "vaapivp8dec", "vaapivp9dec", "vaapiav1dec",
-        "vulkanh264dec", "vulkanh265dec",
-        "nvh264dec", "nvh265dec", "nvvp9dec", "nvav1dec",
+        "vah264dec",
+        "vah265dec",
+        "vavp8dec",
+        "vavp9dec",
+        "vaav1dec",
+        "vah264lpdec",
+        "vah265lpdec",
+        "vavp9lpdec",
+        "vaav1lpdec",
+        "vaapih264dec",
+        "vaapih265dec",
+        "vaapivp8dec",
+        "vaapivp9dec",
+        "vaapiav1dec",
+        "vulkanh264dec",
+        "vulkanh265dec",
+        "nvh264dec",
+        "nvh265dec",
+        "nvvp9dec",
+        "nvav1dec",
     ]
     .map(|name| format!("{name}:0"))
     .join(",");

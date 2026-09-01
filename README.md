@@ -40,6 +40,37 @@ Both scripts default to the host triple; pass one explicitly to cross-prepare
 Always smoke-test the **bundled** app, not just `tauri dev` — resource paths
 resolve differently and dev will pass while the bundle fails.
 
+## Release
+
+Tag and push; the matrix builds every target and opens a **draft** release.
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+| Runner | Target | Bundles |
+|---|---|---|
+| `ubuntu-22.04` | `x86_64-unknown-linux-gnu` | deb, rpm, AppImage |
+| `windows-latest` | `x86_64-pc-windows-msvc` | nsis |
+| `macos-latest` | `aarch64-apple-darwin` | dmg |
+| `macos-15-intel` | `x86_64-apple-darwin` | dmg |
+
+Builds run unsigned unless these repository secrets are set. macOS without
+them still produces a usable DMG for testing, it just will not pass Gatekeeper
+on someone else's machine.
+
+| Secret | For |
+|---|---|
+| `APPLE_CERTIFICATE` | Developer ID cert, base64 of the .p12 |
+| `APPLE_CERTIFICATE_PASSWORD` | that .p12's password |
+| `KEYCHAIN_PASSWORD` | any throwaway value; unlocks the CI keychain |
+| `APPLE_SIGNING_IDENTITY` | e.g. `Developer ID Application: Name (TEAMID)` |
+| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | notarization; `APPLE_PASSWORD` is an app-specific password |
+
+Windows is unsigned for now, so SmartScreen will warn on first run. That needs
+an OV/EV certificate wired to `bundle.windows.signCommand`; reputation accrues
+per certificate, so buy it earlier than you plan to use it.
+
 ## Status
 
 | Milestone | State |

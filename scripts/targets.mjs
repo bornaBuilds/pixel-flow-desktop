@@ -1,3 +1,5 @@
+import { execFileSync } from "node:child_process";
+
 // Single source of truth for the platforms we ship.
 //
 // `sharp` picks its native package at runtime from process.platform/arch, so
@@ -14,6 +16,13 @@ export const TARGETS = {
     binaryInArchive: "node.exe",
     exeSuffix: ".exe",
     npm: { os: "win32", cpu: "x64" },
+  },
+  "aarch64-pc-windows-msvc": {
+    nodeDist: "win-arm64",
+    archive: "zip",
+    binaryInArchive: "node.exe",
+    exeSuffix: ".exe",
+    npm: { os: "win32", cpu: "arm64" },
   },
   "x86_64-apple-darwin": {
     nodeDist: "darwin-x64",
@@ -46,6 +55,35 @@ export const TARGETS = {
 };
 
 export function hostTriple() {
-  const { execSync } = require("node:child_process");
-  return execSync("rustc --print host-tuple").toString().trim();
+  return execFileSync("rustc", ["--print", "host-tuple"]).toString().trim();
 }
+
+export function resolveTarget(argv) {
+  const triple = argv[2] || hostTriple();
+  const target = TARGETS[triple];
+  if (!target) {
+    console.error(
+      `Unknown target "${triple}".\nKnown: ${Object.keys(TARGETS).join("\n       ")}`
+    );
+    process.exit(1);
+  }
+  return { triple, target };
+}
+
+/** Recursive directory size in bytes. `du` does not exist on Windows. */
+export async function directorySize(dir) {
+  const { readdir, stat } = await import("node:fs/promises");
+  const path = await import("node:path");
+  let total = 0;
+  const walk = async (current) => {
+    for (const entry of await readdir(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) await walk(full);
+      else if (entry.isFile()) total += (await stat(full)).size;
+    }
+  };
+  await walk(dir);
+  return total;
+}
+
+export const megabytes = (bytes) => `${(bytes / 1024 / 1024).toFixed(0)} MB`;
