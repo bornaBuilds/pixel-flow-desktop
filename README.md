@@ -46,8 +46,14 @@ Bump the version, commit, then tag:
 
 ```bash
 pnpm version:set 0.2.0
-git commit -am "Release v0.2.0" && git tag v0.2.0 && git push --follow-tags
+git commit -am "Release v0.2.0"
+git tag -a v0.2.0 -m "v0.2.0"
+git push && git push origin v0.2.0
 ```
+
+Push the tag explicitly. `git push --follow-tags` pushes only *annotated*
+tags, so it silently skips a plain `git tag v0.2.0` and the release workflow
+never fires.
 
 The matrix then builds every target and opens a **draft** release.
 
