@@ -1,6 +1,6 @@
 [package]
 name = "pixel-flow-desktop"
-version = "0.1.0"
+version = "0.2.0"
 description = "Convert images and pull thumbnails out of video. Offline."
 authors = ["bornaBuilds"]
 license = "MIT"
