@@ -13,6 +13,7 @@ import { Error } from "@/app/icons/Error";
 import { Loading } from "@/app/icons/Loading";
 import { Success } from "@/app/icons/Success";
 import { FormatDropdown } from "./FormatDropdown";
+import { EngineBadge } from "./EngineBadge";
 import { ConvertedFile } from "../types/images-form";
 import {
   HEADER_SUBTITLES,
@@ -165,6 +166,7 @@ export const ImagesForm = () => {
         onChange={handleInputChange}
       />
       {infoText && <span className="text-base text-red-500">{infoText}</span>}
+      <EngineBadge />
       {convertedFiles.length > 0 && (
         <ImagesFormPreview
           images={convertedFiles}

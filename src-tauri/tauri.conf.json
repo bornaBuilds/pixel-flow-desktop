@@ -28,7 +28,11 @@
       "devCsp": "default-src 'self' http://localhost:3456; img-src 'self' asset: http://asset.localhost blob: data: http://localhost:3000; media-src 'self' asset: http://asset.localhost blob: http://localhost:3000; style-src 'self' 'unsafe-inline' http://localhost:3000; font-src 'self' data: http://localhost:3000; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000; connect-src 'self' ipc: http://ipc.localhost ws://localhost:3000 http://localhost:3000",
       "assetProtocol": {
         "enable": true,
-        "scope": { "allow": ["$APPCACHE/batches/**"] }
+        "scope": {
+          "allow": [
+            "$APPCACHE/batches/**"
+          ]
+        }
       }
     }
   },
@@ -50,7 +54,9 @@
       "minimumSystemVersion": "10.15"
     },
     "linux": {
-      "appimage": { "bundleMediaFramework": true },
+      "appimage": {
+        "bundleMediaFramework": true
+      },
       "deb": {
         "depends": [
           "libwebkit2gtk-4.1-0",
@@ -69,6 +75,16 @@
         ]
       }
     },
-    "windows": { "nsis": { "installMode": "perMachine" } }
+    "windows": {
+      "nsis": {
+        "installMode": "perMachine"
+      }
+    },
+    "externalBin": [
+      "binaries/pixelflow-node"
+    ],
+    "resources": {
+      "resources/sidecar": "sidecar/"
+    }
   }
 }

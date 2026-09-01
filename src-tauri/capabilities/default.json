@@ -31,6 +31,16 @@
         }
       ]
     },
-    "log:default"
+    "log:default",
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "binaries/pixelflow-node",
+          "sidecar": true,
+          "args": true
+        }
+      ]
+    }
   ]
 }

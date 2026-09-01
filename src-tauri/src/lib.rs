@@ -1,3 +1,6 @@
+mod commands;
+mod sidecar;
+
 #[cfg(target_os = "linux")]
 fn work_around_webkitgtk_hardware_decode() {
     // WebKitGTK routes WebCodecs through GStreamer. On machines with a VA-API
@@ -38,16 +41,35 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
+        .manage(sidecar::Sidecar::default())
+        .invoke_handler(tauri::generate_handler![commands::engine_status])
         .setup(|app| {
-            if cfg!(debug_assertions) {
-                app.handle().plugin(
-                    tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Info)
-                        .build(),
-                )?;
+            // Registered in release too: this app has no server, so a log file
+            // is the only way to diagnose a user's "it did nothing" report.
+            app.handle().plugin(
+                tauri_plugin_log::Builder::default()
+                    .level(log::LevelFilter::Info)
+                    .targets([
+                        tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::Stdout),
+                        tauri_plugin_log::Target::new(tauri_plugin_log::TargetKind::LogDir {
+                            file_name: Some("pixelflow".into()),
+                        }),
+                    ])
+                    .build(),
+            )?;
+            // A failure here must not take the window down: the thumbnail
+            // generator does not need the sidecar, and the UI reports the
+            // error via engine_status.
+            if let Err(error) = sidecar::start(app.handle()) {
+                log::error!("image engine failed to start: {error}");
             }
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if let tauri::RunEvent::ExitRequested { .. } = event {
+                sidecar::shutdown(app);
+            }
+        });
 }

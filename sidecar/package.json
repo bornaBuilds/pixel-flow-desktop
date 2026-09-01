@@ -1,0 +1,10 @@
+{
+  "name": "pixel-flow-sidecar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Node + sharp image conversion service, spawned by the Tauri app over stdio.",
+  "dependencies": {
+    "sharp": "0.35.4"
+  }
+}

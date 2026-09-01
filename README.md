@@ -25,9 +25,17 @@ pnpm desktop:dev
 
 ## Build
 
+The sidecar is not in git (~100 MB Node runtime + ~21 MB sharp/libvips per
+platform). Fetch and assemble it for your target first:
+
 ```bash
+node scripts/fetch-node.mjs      # -> src-tauri/binaries/pixelflow-node-<triple>
+node scripts/build-sidecar.mjs   # -> src-tauri/resources/sidecar/
 pnpm desktop:build
 ```
+
+Both scripts default to the host triple; pass one explicitly to cross-prepare
+(`node scripts/build-sidecar.mjs x86_64-pc-windows-msvc`).
 
 Always smoke-test the **bundled** app, not just `tauri dev` — resource paths
 resolve differently and dev will pass while the bundle fails.
@@ -37,8 +45,8 @@ resolve differently and dev will pass while the bundle fails.
 | Milestone | State |
 |---|---|
 | 1 — window opens, static export, thumbnails work | ✅ done |
-| 2 — Node + sharp sidecar spawns from a bundle | ⬜ next |
-| 3 — converter end-to-end, native pick/drop/save | not started |
+| 2 — Node + sharp sidecar spawns from a bundle | ✅ done |
+| 3 — converter end-to-end, native pick/drop/save | ⬜ next |
 | 4 — CI matrix, all four targets | not started |
 | 5 — signing, notarization, updater | not started |
 

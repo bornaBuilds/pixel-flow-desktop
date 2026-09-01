@@ -10,7 +10,10 @@
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
-    "desktop:build:debug": "tauri build --debug"
+    "desktop:build:debug": "tauri build --debug",
+    "sidecar:node": "node scripts/fetch-node.mjs",
+    "sidecar:build": "node scripts/build-sidecar.mjs",
+    "desktop:prepare": "pnpm sidecar:node && pnpm sidecar:build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
@@ -31,6 +34,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "esbuild": "^0.28.2",
     "eslint": "^8",
     "eslint-config-next": "14.2.11",
     "postcss": "^8",
