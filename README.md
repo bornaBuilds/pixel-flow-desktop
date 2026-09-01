@@ -36,8 +36,8 @@ resolve differently and dev will pass while the bundle fails.
 
 | Milestone | State |
 |---|---|
-| 1 — window opens, static export, thumbnails work | in progress |
-| 2 — Node + sharp sidecar spawns from a bundle | not started |
+| 1 — window opens, static export, thumbnails work | ✅ done |
+| 2 — Node + sharp sidecar spawns from a bundle | ⬜ next |
 | 3 — converter end-to-end, native pick/drop/save | not started |
 | 4 — CI matrix, all four targets | not started |
 | 5 — signing, notarization, updater | not started |
