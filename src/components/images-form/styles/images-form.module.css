@@ -1,0 +1,91 @@
+.glow-shadow {
+  box-shadow: 0px 0px 12px 0px rgba(255, 228, 215, 0.4),
+    0px 0px 32px 0px rgba(255, 192, 161, 0.5),
+    0px 0px 80px 0px rgba(255, 161, 115, 0.4),
+    0px 8px 8px 0px rgba(31, 31, 31, 0.05),
+    0px 24px 32px 0px rgba(31, 31, 31, 0.15);
+}
+
+.glow-shadow-error {
+  box-shadow: 0px 0px 12px 0px rgba(255, 214, 214, 0.4),
+    0px 0px 32px 0px rgba(255, 161, 161, 0.5),
+    0px 0px 80px 0px rgba(255, 115, 115, 0.4),
+    0px 8px 8px 0px rgba(31, 31, 31, 0.05),
+    0px 24px 32px 0px rgba(31, 31, 31, 0.15);
+}
+
+.glow-shadow-pending {
+  box-shadow: 0px 0px 12px 0px rgba(255, 252, 215, 0.4),
+    0px 0px 32px 0px rgba(255, 248, 178, 0.5),
+    0px 0px 80px 0px rgba(255, 243, 115, 0.4),
+    0px 8px 8px 0px rgba(31, 31, 31, 0.05),
+    0px 24px 32px 0px rgba(31, 31, 31, 0.15);
+}
+
+.glow-shadow-done {
+  box-shadow: 0px 0px 12px 0px rgba(205, 255, 213, 0.4),
+    0px 0px 32px 0px rgba(186, 255, 197, 0.5),
+    0px 0px 80px 0px rgba(144, 255, 162, 0.4),
+    0px 8px 8px 0px rgba(31, 31, 31, 0.05),
+    0px 24px 32px 0px rgba(31, 31, 31, 0.15);
+}
+
+.images-form-background-default {
+  background-blend-mode: difference;
+  background: linear-gradient(
+      152deg,
+      rgba(254, 254, 254, 0.02) -5.4%,
+      rgba(241, 241, 241, 0) 113.92%
+    ),
+    linear-gradient(
+      312deg,
+      rgba(29, 28, 44, 0.8) 20.58%,
+      rgba(29, 28, 44, 0.4) 159.82%
+    ),
+    url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='32' ry='32' stroke='%23FFA173FF' stroke-width='4' stroke-dasharray='32%2c 32' stroke-dashoffset='22' stroke-linecap='round'/%3e%3c/svg%3e");
+}
+
+.images-form-background-error {
+  background-blend-mode: difference;
+  background: linear-gradient(
+      152deg,
+      rgba(254, 254, 254, 0.02) -5.4%,
+      rgba(241, 241, 241, 0) 113.92%
+    ),
+    linear-gradient(
+      312deg,
+      rgba(29, 28, 44, 0.8) 20.58%,
+      rgba(29, 28, 44, 0.4) 159.82%
+    ),
+    url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='32' ry='32' stroke='%23FF7373FF' stroke-width='4' stroke-dasharray='32%2c 32' stroke-dashoffset='22' stroke-linecap='round'/%3e%3c/svg%3e");
+}
+
+.images-form-background-pending {
+  background-blend-mode: difference;
+  background: linear-gradient(
+      152deg,
+      rgba(254, 254, 254, 0.02) -5.4%,
+      rgba(241, 241, 241, 0) 113.92%
+    ),
+    linear-gradient(
+      312deg,
+      rgba(29, 28, 44, 0.8) 20.58%,
+      rgba(29, 28, 44, 0.4) 159.82%
+    ),
+    url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='32' ry='32' stroke='%23FFF373FF' stroke-width='4' stroke-dasharray='32%2c 32' stroke-dashoffset='22' stroke-linecap='round'/%3e%3c/svg%3e");
+}
+
+.images-form-background-success {
+  background-blend-mode: difference;
+  background: linear-gradient(
+      152deg,
+      rgba(254, 254, 254, 0.02) -5.4%,
+      rgba(241, 241, 241, 0) 113.92%
+    ),
+    linear-gradient(
+      312deg,
+      rgba(29, 28, 44, 0.8) 20.58%,
+      rgba(29, 28, 44, 0.4) 159.82%
+    ),
+    url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='32' ry='32' stroke='%2373FF8AFF' stroke-width='4' stroke-dasharray='32%2c 32' stroke-dashoffset='22' stroke-linecap='round'/%3e%3c/svg%3e");
+}

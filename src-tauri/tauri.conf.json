@@ -1,0 +1,74 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "PixelFlow",
+  "version": "0.1.0",
+  "identifier": "hr.bid.pixelflow",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:3000",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../out"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "PixelFlow",
+        "width": 1180,
+        "height": 800,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "resizable": true,
+        "theme": "Dark",
+        "backgroundColor": "#1D1C2C",
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost blob: data:; media-src 'self' asset: http://asset.localhost blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost asset: http://asset.localhost",
+      "devCsp": "default-src 'self' http://localhost:3000; img-src 'self' asset: http://asset.localhost blob: data: http://localhost:3000; media-src 'self' asset: http://asset.localhost blob: http://localhost:3000; style-src 'self' 'unsafe-inline' http://localhost:3000; font-src 'self' data: http://localhost:3000; script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:3000; connect-src 'self' ipc: http://ipc.localhost ws://localhost:3000 http://localhost:3000",
+      "assetProtocol": {
+        "enable": true,
+        "scope": { "allow": ["$APPCACHE/batches/**"] }
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "GraphicsAndDesign",
+    "shortDescription": "Convert images and pull thumbnails out of video. Offline.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "macOS": {
+      "hardenedRuntime": true,
+      "entitlements": "entitlements.plist",
+      "minimumSystemVersion": "10.15"
+    },
+    "linux": {
+      "appimage": { "bundleMediaFramework": true },
+      "deb": {
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "gstreamer1.0-plugins-base",
+          "gstreamer1.0-plugins-good",
+          "gstreamer1.0-plugins-bad",
+          "gstreamer1.0-libav"
+        ]
+      },
+      "rpm": {
+        "depends": [
+          "webkit2gtk4.1",
+          "gstreamer1-plugins-good",
+          "gstreamer1-plugins-bad-free",
+          "gstreamer1-libav"
+        ]
+      }
+    },
+    "windows": { "nsis": { "installMode": "perMachine" } }
+  }
+}

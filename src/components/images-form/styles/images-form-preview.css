@@ -1,0 +1,30 @@
+/* width */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 12px;
+  border: 1px solid #fefefe1c;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: none;
+  background: linear-gradient(
+    90.37deg,
+    #191826 0.18%,
+    #1d1c2c 216.17%,
+    #191826 432.15%
+  );
+  border-radius: 100px;
+  padding: 2px;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    97.22deg,
+    #4eca62 -16.93%,
+    #73ff8a 43.68%,
+    #4eca62 104.29%
+  );
+
+  border-radius: 200px;
+}

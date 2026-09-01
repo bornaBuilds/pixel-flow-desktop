@@ -1,0 +1,39 @@
+.card {
+  background: linear-gradient(
+      312.39deg,
+      rgba(29, 28, 44, 0.8) 20.58%,
+      rgba(29, 28, 44, 0.4) 159.82%
+    ),
+    linear-gradient(
+      152.4deg,
+      rgba(254, 254, 254, 0.05) -5.4%,
+      rgba(241, 241, 241, 0.01) 113.92%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(29, 28, 44, 0) 37.45%,
+      rgba(29, 28, 44, 0.8) 73.44%
+    );
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+.card::before {
+  content: "";
+  height: 100%;
+  left: 0px;
+  position: absolute;
+  top: 0px;
+  width: 100%;
+  border-radius: inherit;
+
+  background: radial-gradient(
+    800px circle at var(--mouse-x) var(--mouse-y),
+    rgba(178, 112, 80, 0.1),
+    transparent 40%
+  );
+  opacity: 0;
+  transition: opacity 0.3s;
+}
