@@ -42,11 +42,21 @@ resolve differently and dev will pass while the bundle fails.
 
 ## Release
 
-Tag and push; the matrix builds every target and opens a **draft** release.
+Bump the version, commit, then tag:
 
 ```bash
-git tag v0.1.0 && git push origin v0.1.0
+pnpm version:set 0.2.0
+git commit -am "Release v0.2.0" && git tag v0.2.0 && git push --follow-tags
 ```
+
+The matrix then builds every target and opens a **draft** release.
+
+The version lives in `tauri.conf.json`, `package.json` and `Cargo.toml`;
+`pnpm version:check` asserts they agree and CI enforces it. Tauri reads
+`tauri.conf.json`, and that value becomes both the release title and the
+installer filenames — a git tag on its own does not change it. The release
+workflow re-derives it from the tag anyway, so forgetting the bump gets you
+correctly-named artifacts, just a stale number in the repo.
 
 | Runner | Target | Bundles |
 |---|---|---|

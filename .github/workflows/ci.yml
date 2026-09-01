@@ -41,6 +41,10 @@ jobs:
         with:
           workspaces: "./src-tauri -> target"
 
+      # Catches the three version fields drifting apart in a normal commit.
+      - name: Version consistency
+        run: node scripts/set-version.mjs --check
+
       - name: Frontend
         run: |
           pnpm lint

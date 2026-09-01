@@ -41,6 +41,18 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # The git tag is only a ref. Tauri takes the version from
+      # tauri.conf.json, and that value becomes both the release title
+      # (__VERSION__ below) and the installer filenames. Deriving it from the
+      # tag here means the two can never disagree, whether or not the bump was
+      # committed first.
+      - name: Set version from tag
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          node scripts/set-version.mjs "${GITHUB_REF_NAME}"
+          node scripts/set-version.mjs --check
+
       - name: Install Linux build dependencies
         if: startsWith(matrix.runner, 'ubuntu')
         run: |

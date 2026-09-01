@@ -13,7 +13,9 @@
     "desktop:build:debug": "tauri build --debug",
     "sidecar:node": "node scripts/fetch-node.mjs",
     "sidecar:build": "node scripts/build-sidecar.mjs",
-    "desktop:prepare": "pnpm sidecar:node && pnpm sidecar:build"
+    "desktop:prepare": "pnpm sidecar:node && pnpm sidecar:build",
+    "version:set": "node scripts/set-version.mjs",
+    "version:check": "node scripts/set-version.mjs --check"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
