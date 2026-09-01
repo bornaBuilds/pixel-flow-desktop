@@ -2,7 +2,9 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "PixelFlow main window",
-  "windows": ["main"],
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:default",
     "dialog:allow-open",
@@ -12,9 +14,23 @@
     "fs:allow-write-file",
     "fs:allow-mkdir",
     "fs:allow-stat",
-    { "identifier": "fs:scope", "allow": ["$APPCACHE/batches/**", "$PICTURE/**", "$DOWNLOAD/**"] },
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$APPCACHE/batches/**",
+        "$PICTURE/**",
+        "$DOWNLOAD/**"
+      ]
+    },
     "opener:allow-reveal-item-in-dir",
-    { "identifier": "opener:allow-open-url", "allow": [{ "url": "https://github.com/*" }] },
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://github.com/*"
+        }
+      ]
+    },
     "log:default"
   ]
 }
