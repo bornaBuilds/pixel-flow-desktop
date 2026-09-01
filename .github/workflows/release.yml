@@ -62,7 +62,7 @@ jobs:
         with:
           version: 10
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm
@@ -79,10 +79,18 @@ jobs:
           key: ${{ matrix.target }}
 
       # ~100 MB Node runtime + the target's sharp/libvips. Not in git.
+      # bash everywhere (available on Windows runners) so `set -e` semantics
+      # are consistent: with pwsh the second line runs even if the first fails,
+      # which masks the original error.
       - name: Prepare sidecar
+        shell: bash
         run: |
+          set -euxo pipefail
+          node --version
           node scripts/fetch-node.mjs ${{ matrix.target }}
           node scripts/build-sidecar.mjs ${{ matrix.target }}
+          ls -la src-tauri/binaries/
+          ls src-tauri/resources/sidecar/node_modules/@img/
 
       - name: Import Apple certificate
         if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
@@ -131,7 +139,7 @@ jobs:
           args: ${{ matrix.args }} --target ${{ matrix.target }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: pixelflow-${{ matrix.label }}
           if-no-files-found: error

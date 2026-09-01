@@ -36,23 +36,22 @@ mkdirSync(outDir, { recursive: true });
 // 1. Bundle the service. --external:sharp is mandatory: bundling it breaks the
 //    runtime lookup of @img/sharp-<platform>-<arch>.
 console.error("↳ esbuild");
-const pnpm = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
-const npm = process.platform === "win32" ? "npm.cmd" : "npm";
-
-execFileSync(
-  pnpm,
-  [
-    "exec", "esbuild", "sidecar/src/index.mjs",
-    "--bundle",
-    "--platform=node",
-    "--format=cjs",
-    "--target=node20",
-    "--external:sharp",
-    `--outfile=${path.join(outDir, "index.cjs")}`,
-    "--log-level=warning",
-  ],
-  { cwd: root, stdio: "inherit" }
-);
+// esbuild's JS API rather than `pnpm exec esbuild`: since CVE-2024-27980,
+// Node refuses to spawn a .cmd/.bat without shell:true, so shelling out to
+// pnpm.cmd throws EINVAL on Windows runners.
+const { build } = await import("esbuild");
+await build({
+  entryPoints: [path.join(root, "sidecar", "src", "index.mjs")],
+  bundle: true,
+  platform: "node",
+  format: "cjs",
+  target: "node20",
+  // Mandatory: bundling sharp breaks its runtime lookup of
+  // @img/sharp-<platform>-<arch>.
+  external: ["sharp"],
+  outfile: path.join(outDir, "index.cjs"),
+  logLevel: "warning",
+});
 
 // 2. Install sharp for the TARGET platform, not the build host.
 //    npm, not pnpm: pnpm's symlinked store does not survive being copied into
@@ -64,10 +63,12 @@ writeFileSync(
 );
 const flags = [`--os=${target.npm.os}`, `--cpu=${target.npm.cpu}`];
 if (target.npm.libc) flags.push(`--libc=${target.npm.libc}`);
+// npm is a .cmd on Windows, so it needs shell:true for the same reason.
+const onWindows = process.platform === "win32";
 execFileSync(
-  npm,
+  onWindows ? "npm.cmd" : "npm",
   ["install", "--prefix", outDir, "--include=optional", "--no-audit", "--no-fund", "--silent", ...flags, `sharp@${sharpVersion}`],
-  { cwd: root, stdio: "inherit" }
+  { cwd: root, stdio: "inherit", shell: onWindows }
 );
 
 // 3. Fail loudly here rather than at runtime in a packaged app.
