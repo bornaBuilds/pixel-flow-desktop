@@ -1,18 +1,7 @@
 import { Dispatch, SetStateAction } from "react";
+import { ConvertItem } from "./images-form";
 
 export type ImagesFormPreviewProperties = {
-  images: {
-    fileName: string;
-    dataUrl: string;
-    uploading: boolean;
-  }[];
-  setConvertedFiles: Dispatch<
-    SetStateAction<
-      {
-        fileName: string;
-        dataUrl: string;
-        uploading: boolean;
-      }[]
-    >
-  >;
+  items: ConvertItem[];
+  setItems: Dispatch<SetStateAction<ConvertItem[]>>;
 };

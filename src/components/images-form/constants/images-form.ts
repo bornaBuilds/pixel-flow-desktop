@@ -1,7 +1,7 @@
 export const HEADER_TITLES = {
   default: "Drop an Image",
   error: "Invalid Format",
-  pending: "Uploading",
+  pending: "Converting",
   success: "Completed",
 } as const;
 

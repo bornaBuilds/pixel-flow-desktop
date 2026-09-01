@@ -1,12 +1,4 @@
-/**
- * Tauri boundary for image conversion.
- *
- * Milestone 1: stub. The web app POSTed each file to /api/upload, which cannot
- * exist under `output: 'export'`. Milestone 3 replaces the body of this module
- * with an `invoke("convert_images")` call into the Rust command that proxies to
- * the Node + sharp sidecar. The signature here is the contract both sides
- * implement, so nothing above this file changes again.
- */
+import { invoke, Channel, convertFileSrc } from "@tauri-apps/api/core";
 
 export type OutputFormat = "webp" | "jpeg" | "png" | "avif";
 
@@ -14,38 +6,81 @@ export interface ConvertOptions {
   format: OutputFormat;
   /** 1..100. Undefined => engine default (webp/jpeg 80, avif 50). */
   quality?: number;
-  /** Undefined => keep original dimensions. Never upscales, never crops. */
+  /** Undefined => keep original size. Bounds only ever shrink, never crop. */
   maxWidth?: number;
   maxHeight?: number;
 }
 
-export interface ConvertedImage {
-  /** Index into the batch. Correlating by filename collides on duplicate basenames. */
-  index: number;
-  fileName: string;
-  /** Absolute path on disk; render with convertFileSrc(). */
-  outputPath: string;
-  bytesIn: number;
-  bytesOut: number;
-  width: number;
-  height: number;
+export type ConvertEvent =
+  | {
+      event: "started";
+      data: { batchId: string; total: number; outputDir: string };
+    }
+  | { event: "fileStart"; data: { index: number; fileName: string } }
+  | {
+      event: "fileDone";
+      data: {
+        index: number;
+        fileName: string;
+        outputPath: string;
+        bytesIn: number;
+        bytesOut: number;
+        width: number;
+        height: number;
+      };
+    }
+  | {
+      event: "fileError";
+      data: { index: number; fileName: string; message: string };
+    }
+  | {
+      event: "finished";
+      data: { batchId: string; succeeded: number; failed: number };
+    };
+
+export interface BatchHandle {
+  batchId: string;
+  outputDir: string;
 }
 
-export class ConversionUnavailableError extends Error {
-  constructor() {
-    super("Image conversion is not wired up yet (Milestone 3).");
-    this.name = "ConversionUnavailableError";
-  }
-}
-
+/**
+ * Convert a batch of images through the Rust command and its sharp sidecar.
+ *
+ * Results stream back per file over a Channel rather than a global event, so a
+ * second batch cannot cross-talk into the first batch's handler. Progress is
+ * keyed by index, not filename: two files with the same basename are ordinary
+ * (different folders), and the web version silently overwrote one with the
+ * other.
+ *
+ * No image bytes cross IPC — outputs land in the app cache and come back as
+ * paths.
+ */
 export async function convertImages(
   paths: string[],
-  options: ConvertOptions
-): Promise<ConvertedImage[]> {
-  // Validated here so Milestone 3 inherits the guard rather than adding it later.
-  if (paths.length === 0) return [];
-  if (options.quality !== undefined && (options.quality < 1 || options.quality > 100)) {
+  options: ConvertOptions,
+  onEvent: (event: ConvertEvent) => void
+): Promise<BatchHandle> {
+  if (paths.length === 0) {
+    throw new RangeError("No images to convert.");
+  }
+  if (
+    options.quality !== undefined &&
+    (options.quality < 1 || options.quality > 100)
+  ) {
     throw new RangeError(`quality must be 1..100, got ${options.quality}`);
   }
-  throw new ConversionUnavailableError();
+
+  const channel = new Channel<ConvertEvent>();
+  channel.onmessage = onEvent;
+
+  return invoke<BatchHandle>("convert_images", {
+    paths,
+    options,
+    onEvent: channel,
+  });
+}
+
+/** Turn an on-disk path into something the webview can render. */
+export function previewSrc(path: string): string {
+  return convertFileSrc(path);
 }

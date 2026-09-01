@@ -13,5 +13,11 @@ export interface EngineStatus {
  * because dev resolves resource paths from a different directory.
  */
 export async function engineStatus(): Promise<EngineStatus> {
-  return invoke<EngineStatus>("engine_status");
+  // invoke() reads window.__TAURI_INTERNALS__ and can throw synchronously
+  // outside a Tauri webview; keep that a rejected promise, not a render crash.
+  try {
+    return await invoke<EngineStatus>("engine_status");
+  } catch (error) {
+    throw error instanceof Error ? error : new Error(String(error));
+  }
 }

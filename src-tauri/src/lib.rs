@@ -1,4 +1,6 @@
 mod commands;
+mod convert;
+mod files;
 mod sidecar;
 
 #[cfg(target_os = "linux")]
@@ -42,7 +44,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .manage(sidecar::Sidecar::default())
-        .invoke_handler(tauri::generate_handler![commands::engine_status])
+        .invoke_handler(tauri::generate_handler![
+            commands::engine_status,
+            convert::convert_images,
+            files::save_converted,
+            files::save_all_converted,
+        ])
         .setup(|app| {
             // Registered in release too: this app has no server, so a log file
             // is the only way to diagnose a user's "it did nothing" report.

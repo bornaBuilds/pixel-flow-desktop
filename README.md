@@ -46,9 +46,10 @@ resolve differently and dev will pass while the bundle fails.
 |---|---|
 | 1 — window opens, static export, thumbnails work | ✅ done |
 | 2 — Node + sharp sidecar spawns from a bundle | ✅ done |
-| 3 — converter end-to-end, native pick/drop/save | ⬜ next |
-| 4 — CI matrix, all four targets | not started |
+| 3 — converter end-to-end, native pick/drop/save | ✅ done |
+| 4 — CI matrix, all four targets | ⬜ next |
 | 5 — signing, notarization, updater | not started |
 
-The image converter is intentionally stubbed until Milestone 3; see
-`src/platform/convert.ts`.
+Everything crossing into Tauri lives in `src/platform/`: `convert.ts`
+(batch conversion + progress channel), `files.ts` (native pickers and saves),
+`drag-drop.ts` (path-yielding drag and drop), `engine.ts` (sidecar health).
