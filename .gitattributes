@@ -1,0 +1,12 @@
+# Global core.autocrlf=true would rewrite LF -> CRLF in the working copy on
+# Linux/macOS, breaking shell scripts and the sidecar's newline-delimited
+# stdio protocol. Pin text to LF for this repo.
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.icns binary
+*.woff binary
+*.woff2 binary
+*.otf binary
+*.avif binary
