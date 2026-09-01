@@ -52,24 +52,25 @@ git tag v0.1.0 && git push origin v0.1.0
 |---|---|---|
 | `ubuntu-22.04` | `x86_64-unknown-linux-gnu` | deb, rpm, AppImage |
 | `windows-latest` | `x86_64-pc-windows-msvc` | nsis |
-| `macos-latest` | `aarch64-apple-darwin` | dmg |
-| `macos-15-intel` | `x86_64-apple-darwin` | dmg |
-
-Builds run unsigned unless these repository secrets are set. macOS without
-them still produces a usable DMG for testing, it just will not pass Gatekeeper
-on someone else's machine.
-
-| Secret | For |
-|---|---|
-| `APPLE_CERTIFICATE` | Developer ID cert, base64 of the .p12 |
-| `APPLE_CERTIFICATE_PASSWORD` | that .p12's password |
-| `KEYCHAIN_PASSWORD` | any throwaway value; unlocks the CI keychain |
-| `APPLE_SIGNING_IDENTITY` | e.g. `Developer ID Application: Name (TEAMID)` |
-| `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID` | notarization; `APPLE_PASSWORD` is an app-specific password |
 
 Windows is unsigned for now, so SmartScreen will warn on first run. That needs
 an OV/EV certificate wired to `bundle.windows.signCommand`; reputation accrues
 per certificate, so buy it earlier than you plan to use it.
+
+### macOS
+
+Not built yet, by choice. Nothing in the Rust or sidecar code is
+platform-specific, `scripts/sign-macos-inner.sh` is kept, and
+`src-tauri/entitlements.plist` already carries the JIT and
+`disable-library-validation` entitlements the Node/V8 sidecar needs under
+hardened runtime. Re-adding it means two matrix entries
+(`macos-latest` for arm64, `macos-15-intel` for x64 — `macos-13` no longer
+exists), the certificate import step, and running the inner-signing script
+before `tauri build`, because Tauri signs `externalBin` but **not**
+`bundle.resources` and notarization rejects any unsigned Mach-O.
+
+Its last attempt failed inside `tauri build --bundles dmg` after compiling
+cleanly, so the cause is in bundling or signing, not the app.
 
 ## Status
 

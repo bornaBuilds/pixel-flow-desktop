@@ -9,13 +9,16 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# macOS is intentionally absent for now. The Rust and sidecar work is
+# platform-agnostic and scripts/sign-macos-inner.sh is kept, so re-adding it is
+# a matrix entry plus the certificate steps - see README.
 jobs:
   build:
     name: ${{ matrix.label }}
     permissions:
       contents: write
     strategy:
-      # One platform failing should not hide whether the others work.
+      # One platform failing should not hide whether the other works.
       fail-fast: false
       matrix:
         include:
@@ -33,17 +36,6 @@ jobs:
             target: x86_64-pc-windows-msvc
             # NSIS only: the updater path is far better tested for NSIS than MSI.
             args: "--bundles nsis"
-          - label: macos-arm64
-            runner: macos-latest
-            target: aarch64-apple-darwin
-            args: "--bundles dmg"
-          # macos-13 was removed by GitHub; -intel is the current x64 label.
-          # Separate per-arch DMGs rather than universal: universal would mean
-          # shipping two Node runtimes and two sharp trees in one bundle.
-          - label: macos-x64
-            runner: macos-15-intel
-            target: x86_64-apple-darwin
-            args: "--bundles dmg"
 
     runs-on: ${{ matrix.runner }}
     steps:
@@ -78,10 +70,11 @@ jobs:
           workspaces: "./src-tauri -> target"
           key: ${{ matrix.target }}
 
-      # ~100 MB Node runtime + the target's sharp/libvips. Not in git.
-      # bash everywhere (available on Windows runners) so `set -e` semantics
-      # are consistent: with pwsh the second line runs even if the first fails,
-      # which masks the original error.
+      # ~100 MB Node runtime + the target's sharp/libvips. Neither is in git.
+      #
+      # bash on every platform, including Windows: `run:` defaults to pwsh
+      # there, where a failing first line does not stop the second and the
+      # original error gets masked.
       - name: Prepare sidecar
         shell: bash
         run: |
@@ -92,49 +85,16 @@ jobs:
           ls -la src-tauri/binaries/
           ls src-tauri/resources/sidecar/node_modules/@img/
 
-      - name: Import Apple certificate
-        if: runner.os == 'macOS' && env.APPLE_CERTIFICATE != ''
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-        run: |
-          echo "$APPLE_CERTIFICATE" | base64 --decode > cert.p12
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security import cert.p12 -k build.keychain \
-            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-          security set-key-partition-list -S apple-tool:,apple:,codesign: \
-            -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          rm cert.p12
-
-      # Tauri signs the app and externalBin but NOT bundle.resources, and
-      # notarization rejects any unsigned Mach-O. Must run before tauri build.
-      - name: Sign sidecar inner binaries
-        if: runner.os == 'macOS'
-        env:
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-        run: bash scripts/sign-macos-inner.sh
-
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Apple: signing + notarization. Unset -> unsigned build, which still
-          # produces a usable DMG for testing.
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
           releaseName: "PixelFlow __VERSION__"
           releaseDraft: true
           prerelease: false
-          # No updater configured yet (Milestone 5); default is true, which
-          # would publish a latest.json nothing can consume.
+          # No updater configured yet (Milestone 5); the default would publish a
+          # latest.json nothing can consume.
           uploadUpdaterJson: false
           args: ${{ matrix.args }} --target ${{ matrix.target }}
 
@@ -147,5 +107,4 @@ jobs:
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.rpm
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
             src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe

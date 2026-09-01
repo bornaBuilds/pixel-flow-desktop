@@ -47,11 +47,13 @@ jobs:
           pnpm typecheck
           pnpm build
 
-      # tauri_build validates bundle.externalBin, so every cargo invocation -
-      # clippy and test included - fails without it. The real ~100 MB runtime
-      # is not worth downloading on every PR: this job never spawns the
-      # sidecar through Tauri, and the smoke test below runs it under the
-      # runner's own node. A placeholder is enough to satisfy the check.
+      # tauri_build validates BOTH bundle.externalBin and bundle.resources, so
+      # every cargo invocation - clippy and test included - fails without them.
+      # Both are gitignored.
+      #
+      # The ~100 MB Node runtime is not worth downloading on every PR: this job
+      # never spawns the sidecar through Tauri, and the smoke test below runs it
+      # under the runner's own node. A placeholder satisfies the check.
       - name: Stub the sidecar binary (checks only, never executed)
         run: |
           mkdir -p src-tauri/binaries
@@ -60,19 +62,22 @@ jobs:
             > "src-tauri/binaries/pixelflow-node-$TRIPLE"
           chmod +x "src-tauri/binaries/pixelflow-node-$TRIPLE"
 
+      # The resource tree is built for real: it is cheap (no runtime download),
+      # tauri_build requires it to exist, and the smoke test needs it anyway.
+      - name: Build sidecar tree
+        run: node scripts/build-sidecar.mjs
+
+      # Fails fast and cheaply if sharp cannot load libvips on this platform.
+      - name: Sidecar smoke test
+        run: |
+          printf '{"op":"versions","id":"1"}\n' \
+            | node src-tauri/resources/sidecar/index.cjs \
+            | tee /dev/stderr \
+            | grep -q '"ok":true'
+
       - name: Rust
         working-directory: src-tauri
         run: |
           cargo fmt --check
           cargo clippy --all-targets -- -D warnings
           cargo test --lib
-
-      # Cheap smoke test that sharp actually loads libvips on this platform,
-      # without paying for a full bundle. Runs under the runner's own node.
-      - name: Sidecar smoke test
-        run: |
-          node scripts/build-sidecar.mjs
-          printf '{"op":"versions","id":"1"}\n' \
-            | node src-tauri/resources/sidecar/index.cjs \
-            | tee /dev/stderr \
-            | grep -q '"ok":true'
